@@ -68,6 +68,7 @@ python api_test_gui.py
 
 ## 📝 注意
 
+- 需要将Stable Diffusion Webui配置完成
 - 确保API服务正常运行，并能够响应GUI的请求。
 - 部分代码内容未完全显示，请确保使用完整的`api_test_gui.py`文件。
 
