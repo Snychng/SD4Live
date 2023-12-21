@@ -17,6 +17,10 @@ total_time = 0
 progress_stopped = False
 generate_running = False
 auto_generate_running = False
+image_frames = []
+image_labels = []
+recent_images = []
+max_image_history = 8  # 最多显示8张图片
 
 # create API client with custom host, port
 api = webuiapi.WebUIApi(host='127.0.0.1', port=7860)
@@ -66,6 +70,7 @@ def set_model(event):
     
 def generate_image():
     global image_count, start_time, total_time, progress_stopped, generate_running, auto_generate_running
+    global max_image_history, recent_images
 
     if not auto_generate_running and generate_running:
         return  # 如果全局变量表示停止，则立即退出函数
@@ -96,18 +101,57 @@ def generate_image():
         output_directory = "./output"
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
-
-        file_path = os.path.join(output_directory, "tmp.png")
+        
+        # 每张图片使用独特的文件名
+        file_name = f"image_{image_count}.png"
+        file_path = os.path.join(output_directory, file_name)
         result.image.save(file_path)
+
+        # 将新图片路径添加到列表并保持列表长度不超过8
+        if len(recent_images) >= max_image_history:
+            # 删除最旧的图片文件
+            os.remove(recent_images.pop(0))
+        
+        recent_images.append(file_path)
 
         def update_ui():
             global image_count
             image = Image.open(file_path)
+            
+            # 获取原始图像尺寸
+            orig_width, orig_height = image.size
+            
+            # 计算新尺寸为原尺寸的1/4
+            new_width = orig_width // 4
+            new_height = orig_height // 4
+            
+            # 缩小图像为新尺寸
+            small_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # 为缩小后的图像创建Tkinter PhotoImage对象
+            tk_small_image = ImageTk.PhotoImage(small_image)
+            
+            # 中间面板的图片仍然使用原始大小
             tk_image = ImageTk.PhotoImage(image)
 
-            # 更新标签来展示新图像
+            # 将新图片添加到展示面板
+            if image_count < max_image_history:
+                img_label = image_labels[image_count]
+            else:
+                # 移除最旧的图片，并将新图片添加到最后一个位置
+                img_label = image_labels.pop(0)
+                image_labels.append(img_label)
+            
+            # 更新图片展示为缩小后的图片
+            img_label.configure(image=tk_small_image)
+            img_label.image = tk_small_image  # Keep a reference to avoid garbage-collection
+            img_label.update()  # 更新图片显示
+
+            # 中间面板图片控件使用原始大小图像
             image_label.configure(image=tk_image)
             image_label.image = tk_image  # Keep a reference
+
+            # ... （后续代码不变）
 
             image_count += 1
             image_count_label.config(text=f"本次生成的第{image_count}张图像")
@@ -132,7 +176,7 @@ def auto_generate_images():
     while auto_generate_running:
         generate_image()
         # 这里可以根据需要添加延时
-        time.sleep(15)  # 15秒钟生成一张图像，根据实际情况调整
+        time.sleep(20)
         if not auto_generate_running:
             break  # 如果全局变量表示停止，跳出循环
 
@@ -162,20 +206,22 @@ def update_time_labels():
 
     # 每1000毫秒调用一次自身，以更新时间
     root.after(1000, update_time_labels)
-    
+
 # 使用更加现代的主题
 style = Style(theme='minty')
 
 # 创建主窗口
 root = style.master
 root.title("SD For Live")
-root.geometry('936x800')  # 设置窗口默认大小
+root.geometry('1249x901')  # 设置窗口默认大小
 
 # 定义左侧面板（文本输入）中间面板（图像显示）右侧面板（图像总览）
 control_panel = ttk.Frame(root, padding="10")
 control_panel.grid(row=0, column=0, sticky="nswe")
 view_panel = ttk.Frame(root, padding="10")
 view_panel.grid(row=0, column=1, sticky="nswe")
+image_history_panel = ttk.Frame(root, padding="10")
+image_history_panel.grid(row=0, column=2, sticky="nswe", padx=10)  # 新面板位于第三列
 
 # 在其他全局变量定义下面添加进度条和状态标签的声明
 progress_label = ttk.Label(root, text="模型状态：未开始", font=("Helvetica", 10))
@@ -247,7 +293,7 @@ image_count_label = ttk.Label(view_panel, text="本次生成的第0张图像")
 image_count_label.grid(row=1, column=0, pady=10, sticky="w")  # 左对齐
 
 total_time_label = ttk.Label(view_panel, text="本次生成总用时：0秒")
-total_time_label.grid(row=1, column=1, pady=10)  # 居中对齐（默认，不需要 "nswe"）
+total_time_label.grid(row=1, column=1, pady=10, sticky="nswe")  # 居中对齐（默认，不需要 "nswe"）
 
 average_time_label = ttk.Label(view_panel, text="平均每张图片用时：0.00秒")
 average_time_label.grid(row=1, column=2, pady=10, sticky="e")  # 右对齐
@@ -267,6 +313,25 @@ progress_label = ttk.Label(root, text="操作状态：未开始", font=("Helveti
 progress_bar = ttk.Progressbar(root, mode='indeterminate')
 progress_label.grid(row=2, column=0, columnspan=2, sticky='ew', padx=10, pady=5)
 progress_bar.grid(row=3, column=0, columnspan=2, sticky='ew', padx=10, pady=5)
+
+# 创建8个图片标签并初始化，以4行2列的形式排列
+for i in range(max_image_history):
+    row = i // 2  # 确定当前框架的行号
+    column = i % 2  # 确定当前框架的列号
+    frame = ttk.Frame(image_history_panel, borderwidth=2, relief="groove", width=128, height=192)
+    frame.grid(row=row, column=column, padx=5, pady=5)  # 使用grid而不是pack
+    frame.grid_propagate(False)  # 防止框架调整到其中组件的大小
+    label = ttk.Label(frame)
+    label.grid(sticky="nsew")  # 让标签扩展填充整个框架
+    image_frames.append(frame)
+    image_labels.append(label)
+
+# 配置image_history_panel的网格行列权重，确保它们可以扩展填充空间
+for i in range(4):  # 四行
+    image_history_panel.grid_rowconfigure(i, weight=1)
+for j in range(2):  # 两列
+    image_history_panel.grid_columnconfigure(j, weight=1)
+
 
 # 配置按钮命令
 generate_button.configure(command=generate_image)
