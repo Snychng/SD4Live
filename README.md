@@ -55,7 +55,7 @@ python api_test_gui.py
 
 ## 📷 截图
 
-![mainform](C:\Users\MLTZ\Desktop\杂\SYC\Screenshot\mainform.png)
+![mainform](./Screenshot/mainform.png)
 > 2023/12/21 界面
 
 ## 📚 代码说明
