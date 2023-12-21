@@ -1,3 +1,4 @@
+import os
 import webuiapi
 from PIL import Image, ImageTk
 from tkinter import ttk
@@ -109,7 +110,11 @@ def generate_image():
             alwayson_scripts=adetailer,
         )
 
-        file_path = "./output/tmp.png"
+        output_directory = "./output"
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        file_path = os.path.join(output_directory, "tmp.png")
         result.image.save(file_path)
 
         def update_ui():
