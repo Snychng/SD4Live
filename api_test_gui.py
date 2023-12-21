@@ -7,19 +7,21 @@ from tkinter.scrolledtext import ScrolledText
 from ttkbootstrap import Style
 import time
 import threading
+
 from config import prompts, negative_prompts, ad_prompts, adetailer
 
-# create API client with custom host, port
-api = webuiapi.WebUIApi(host='127.0.0.1', port=7860)
-api.set_auth('snychng', '9081726354')
-
 # 全局标志变量，用于控制自动生成的开始和停止
-auto_generate_running = False
 image_count = 0
 start_time = None
 total_time = 0
 progress_stopped = False
 generate_running = False
+auto_generate_running = False
+
+# create API client with custom host, port
+api = webuiapi.WebUIApi(host='127.0.0.1', port=7860)
+api.set_auth('snychng', '9081726354')
+models = api.util_get_model_names()
 
 def start_progress_bar(interval=100):
     global progress_stopped
@@ -61,25 +63,6 @@ def set_model(event):
 
     # 启动新线程来切换模型
     threading.Thread(target=switch_model_thread).start()
-
-models = api.util_get_model_names()
-
-def update_time_labels():
-    global start_time, image_count, total_time
-    
-    if start_time is not None:
-        current_time = time.time()
-        total_time = current_time - start_time
-        if image_count > 0:
-            average_time = total_time / image_count
-        else:
-            average_time = 0
-
-        total_time_label.config(text=f"总共用时：{total_time:.0f}秒")
-        
-
-    # 每1000毫秒调用一次自身，以更新时间
-    root.after(1000, update_time_labels)
     
 def generate_image():
     global image_count, start_time, total_time, progress_stopped, generate_running, auto_generate_running
@@ -163,6 +146,23 @@ def stop_auto_generate():
     global auto_generate_running
     auto_generate_running = False
 
+def update_time_labels():
+    global start_time, image_count, total_time
+    
+    if start_time is not None:
+        current_time = time.time()
+        total_time = current_time - start_time
+        if image_count > 0:
+            average_time = total_time / image_count
+        else:
+            average_time = 0
+
+        total_time_label.config(text=f"总共用时：{total_time:.0f}秒")
+        
+
+    # 每1000毫秒调用一次自身，以更新时间
+    root.after(1000, update_time_labels)
+    
 # 使用更加现代的主题
 style = Style(theme='minty')
 
