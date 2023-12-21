@@ -4,7 +4,7 @@
 
 ## 📷 截图
 
-![mainform](./Screenshot/mainform_231221.png)
+![mainform](./Screenshot/mainform_231221_2.png)
 > 2023/12/21 界面
 
 ## 🌐 项目背景
