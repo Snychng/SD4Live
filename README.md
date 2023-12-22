@@ -40,14 +40,10 @@ pip install pillow ttkbootstrap webuiapi
 1. 克隆或下载本项目的代码至您的本地计算机。
 2. 在`api_test_gui.py`文件中配置您的API主机和端口，以及认证信息。
 3. 启动API服务，确保其与本工具在同一网络下并且可以相互通信。
-4. 运行`api_test_gui.py`：
-
-```sh
-python api_test_gui.py
-```
-
+4. 在命令行中运行`python api_test_gui.py`
 5. 在GUI界面中填写正面和负面提示词，以指导Stable Diffusion模型生成您想要的图像。
 6. 使用直播软件的窗口捕捉功能来捕获此GUI界面，即可在直播中展示图像生成过程。
+7. 互动礼物数据捕获需要使用[DouyinBarrageGrab](https://github.com/HaoDong108/DouyinBarrageGrab)项目。
 
 ## 🎥 与直播软件结合使用
 
@@ -76,8 +72,11 @@ python api_test_gui.py
 
 - ☑️ **增加过程进度条**
 - ☑️ **自主选择模型**
-- 🟩 **图像界面右侧增加过往图像**
-- 🟨 **与直播界面互动**
+- ☑️ **图像界面右侧增加过往图像**
+- ☑️ **通过`msg_listening.py`捕获抖音互动消息**
+- 🟩 **与直播界面互动**
+- 🟨 **储存互动用户数据**
+- 🟨 **自主实现抖音直播的数据捕获方法**
 
 > ☑️ `已完成` 🟩 `开发中` 🟨 `计划开发` 🟥 `停止开发`
 
