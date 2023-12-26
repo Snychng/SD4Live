@@ -44,6 +44,7 @@ pip install pillow ttkbootstrap webuiapi
 5. 在GUI界面中填写正面和负面提示词，以指导Stable Diffusion模型生成您想要的图像。
 6. 使用直播软件的窗口捕捉功能来捕获此GUI界面，即可在直播中展示图像生成过程。
 7. 互动礼物数据捕获需要使用[DouyinBarrageGrab](https://github.com/HaoDong108/DouyinBarrageGrab)项目。
+8. 需要在`SD4Live`项目文件夹内，将`DouyinBarrageGrab`项目Clone入名为`Catch`的新建文件夹。
 
 ## 🎥 与直播软件结合使用
 
