@@ -1,5 +1,6 @@
 import os
 import webuiapi
+import subprocess
 from PIL import Image, ImageTk
 from tkinter import ttk
 import tkinter as tk
@@ -190,6 +191,36 @@ def stop_auto_generate():
     global auto_generate_running
     auto_generate_running = False
 
+# #########################  输出WssBarrageService程序内容  #######################
+# def run_wss_barrage_service():
+#     try:
+#         # 使用subprocess.Popen运行Catch目录内的WssBarrageService.exe
+#         subprocess.Popen(["./Catch/WssBarrageService.exe"])
+#         progress_label.config(text="WssBarrageService.exe已启动")
+#     except Exception as e:
+#         progress_label.config(text=f"启动失败: {e}")
+
+# #########################  不输出WssBarrageService程序内容  #######################    
+def run_wss_barrage_service():
+    try:
+        # 使用subprocess.Popen运行Catch目录内的WssBarrageService.exe，并抑制输出
+        subprocess.Popen(
+            ["./Catch/WssBarrageService.exe"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        progress_label.config(text="WssBarrageService.exe已启动")
+    except Exception as e:
+        progress_label.config(text=f"启动失败: {e}")
+
+def run_msg_listening():
+    try:
+        # 使用subprocess.Popen运行msg_listening.py脚本
+        subprocess.Popen(["python", "msg_listening.py"])
+        progress_label.config(text="msg_listening.py已运行")
+    except Exception as e:
+        progress_label.config(text=f"运行失败: {e}")
+
 def update_time_labels():
     global start_time, image_count, total_time
     
@@ -287,6 +318,13 @@ start_auto_generate_button = ttk.Button(control_panel, text="开始自动生成"
 start_auto_generate_button.grid(row=9, column=0, pady=10, sticky="we")
 stop_auto_generate_button = ttk.Button(control_panel, text="停止自动生成", command=stop_auto_generate)
 stop_auto_generate_button.grid(row=10, column=0, pady=10, sticky="we")
+
+# 在GUI中创建按钮并绑定上面的函数
+run_wss_service_button = ttk.Button(control_panel, text="启动直播监听", command=run_wss_barrage_service)
+run_wss_service_button.grid(row=11, column=0, pady=10, sticky="we")  # 调整行号和列号以适应你的布局
+
+run_msg_listening_button = ttk.Button(control_panel, text="运行抓包输出", command=run_msg_listening)
+run_msg_listening_button.grid(row=12, column=0, pady=10, sticky="we")  # 调整行号和列号以适应你的布局
 
 # 在UI中添加显示图像计数的标签
 image_count_label = ttk.Label(view_panel, text="本次生成的第0张图像")
