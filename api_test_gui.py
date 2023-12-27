@@ -213,11 +213,49 @@ def run_wss_barrage_service():
     except Exception as e:
         progress_label.config(text=f"启动失败: {e}")
 
+# def run_msg_listening():
+#     try:
+#         # 使用subprocess.Popen运行msg_listening.py脚本
+#         subprocess.Popen(["python", "msg_listening.py"])
+#         progress_label.config(text="msg_listening.py已运行")
+#     except Exception as e:
+#         progress_label.config(text=f"运行失败: {e}")
+        
 def run_msg_listening():
     try:
-        # 使用subprocess.Popen运行msg_listening.py脚本
-        subprocess.Popen(["python", "msg_listening.py"])
-        progress_label.config(text="msg_listening.py已运行")
+        # 设置Popen调用，将输出重定向到PIPE，以便可以捕获
+        process = subprocess.Popen(
+            ["python", "msg_listening.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,  # 以文本模式处理输出和错误
+            bufsize=1,  # 行缓冲
+            universal_newlines=True  # 适用于所有平台的换行符支持
+        )
+        progress_label.config(text="msg_listening.py正在运行...")
+
+        # 在一个新的线程中读取输出，以避免冻结UI
+        def read_output(process, output_widget):
+            while True:
+                output_line = process.stdout.readline()
+                if output_line == '' and process.poll() is not None:
+                    break
+                if output_line:
+                    # 插入新的输出行到文本控件
+                    output_widget.insert(tk.END, output_line)
+                    # 自动滚动到最新的输出行
+                    output_widget.see(tk.END)
+                    
+                    # 限制文本控件中的行数为10
+                    lines = output_widget.get('1.0', tk.END).splitlines()
+                    if len(lines) > 10:
+                        # 保留最新的10行，并删除其余的行
+                        output_widget.delete('1.0', '2.0')
+            process.stdout.close()
+
+        # 启动线程来读取输出
+        threading.Thread(target=read_output, args=(process, output_live_text)).start()
+
     except Exception as e:
         progress_label.config(text=f"运行失败: {e}")
 
@@ -325,6 +363,11 @@ run_wss_service_button.grid(row=11, column=0, pady=10, sticky="we")  # 调整行
 
 run_msg_listening_button = ttk.Button(control_panel, text="运行抓包输出", command=run_msg_listening)
 run_msg_listening_button.grid(row=12, column=0, pady=10, sticky="we")  # 调整行号和列号以适应你的布局
+
+# 直播互动输出
+ttk.Label(control_panel, text="直播消息记录", font=("Helvetica", 10)).grid(row=13, column=0, sticky="w", pady=2)
+output_live_text = ScrolledText(control_panel, height=5, width=50, font=("Helvetica", 10))
+output_live_text.grid(row=14, column=0, pady=2, sticky="we")
 
 # 在UI中添加显示图像计数的标签
 image_count_label = ttk.Label(view_panel, text="本次生成的第0张图像")
