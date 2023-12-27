@@ -1,3 +1,7 @@
+# 2023/12/27 
+# 抖音直播监听，需使用浏览器打开抖音任意直播间
+# 如：https://live.douyin.com/******
+
 import asyncio
 import websockets
 import json
