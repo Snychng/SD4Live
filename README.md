@@ -1,10 +1,10 @@
 # Stable Diffusion for Live
 
-这个项目是基于[`sdwebuiapi`](https://github.com/mix1009/sdwebuiapi)开发的，旨在使用Stable Diffusion模型自动生成AI绘图，并能够通过任意直播软件进行直播展示。
+这个项目是基于[`sdwebuiapi`](https://github.com/mix1009/sdwebuiapi)开发的，旨在使用Stable Diffusion模型自动生成AI绘图，并能够通过任意直播软件进行直播展示，目前推荐使用抖音直播（可以实现与弹幕礼物等互动）
 
 ## 📷 截图
 
-![mainform](./Screenshot/mainform_231221_2.png)
+![mainform](./Screenshot/mainform_231227_4.png)
 > 2023/12/21 界面
 
 ## 🌐 项目背景
@@ -74,7 +74,8 @@ pip install pillow ttkbootstrap webuiapi
 - ☑️ **增加过程进度条**
 - ☑️ **自主选择模型**
 - ☑️ **图像界面右侧增加过往图像**
-- ☑️ **通过`msg_listening.py`捕获抖音互动消息**
+- ☑️ **通过`msg_listening.py`捕获抖音直播互动消息**
+- ☑️ **展示捕获到的直播互动消息**
 - 🟩 **与直播界面互动**
 - 🟨 **储存互动用户数据**
 - 🟨 **自主实现抖音直播的数据捕获方法**
