@@ -8,6 +8,9 @@ from tkinter.scrolledtext import ScrolledText
 from ttkbootstrap import Style
 import time
 import threading
+import cv2
+from tkinter import Canvas
+from queue import Queue, Empty
 
 from config import prompts, negative_prompts, ad_prompts, adetailer
 
@@ -191,16 +194,6 @@ def stop_auto_generate():
     global auto_generate_running
     auto_generate_running = False
 
-# #########################  输出WssBarrageService程序内容  #######################
-# def run_wss_barrage_service():
-#     try:
-#         # 使用subprocess.Popen运行Catch目录内的WssBarrageService.exe
-#         subprocess.Popen(["./Catch/WssBarrageService.exe"])
-#         progress_label.config(text="WssBarrageService.exe已启动")
-#     except Exception as e:
-#         progress_label.config(text=f"启动失败: {e}")
-
-# #########################  不输出WssBarrageService程序内容  #######################    
 def run_wss_barrage_service():
     try:
         # 使用subprocess.Popen运行Catch目录内的WssBarrageService.exe，并抑制输出
@@ -212,17 +205,10 @@ def run_wss_barrage_service():
         progress_label.config(text="WssBarrageService.exe已启动")
     except Exception as e:
         progress_label.config(text=f"启动失败: {e}")
-
-# def run_msg_listening():
-#     try:
-#         # 使用subprocess.Popen运行msg_listening.py脚本
-#         subprocess.Popen(["python", "msg_listening.py"])
-#         progress_label.config(text="msg_listening.py已运行")
-#     except Exception as e:
-#         progress_label.config(text=f"运行失败: {e}")
         
 def run_msg_listening():
     try:
+        video_player.start()
         # 设置Popen调用，将输出重定向到PIPE，以便可以捕获
         process = subprocess.Popen(
             ["python", "msg_listening.py"],
@@ -276,29 +262,119 @@ def update_time_labels():
     # 每1000毫秒调用一次自身，以更新时间
     root.after(1000, update_time_labels)
 
+class VideoPlayer(threading.Thread):
+    def __init__(self, video_folder, canvas, loop=True):
+        super().__init__()
+        self.video_folder = video_folder
+        self.canvas = canvas
+        self.loop = loop
+        self.running = True
+        self.frame_queue = Queue(maxsize=1)
+        self.stop_event = threading.Event()
+        self.video_files = self.get_video_files()
+        self.current_video_index = 0
+
+    def get_video_files(self):
+        # 获取文件夹内所有视频文件
+        files = [f for f in os.listdir(self.video_folder) if f.endswith(('.mp4', '.avi', '.mov'))]
+        files.sort()  # 可能需要根据实际情况调整排序
+        return files
+
+    def run(self):
+        while not self.stop_event.is_set():
+            if self.current_video_index < len(self.video_files):
+                video_path = os.path.join(self.video_folder, self.video_files[self.current_video_index])
+                cap = cv2.VideoCapture(video_path)
+                while not self.stop_event.is_set():
+                    ret, frame = cap.read()
+                    if ret:
+                        if not self.frame_queue.full():
+                            self.frame_queue.put(frame)
+                        time.sleep(1 / 30)  # 假设视频是30fps
+                    else:
+                        break
+                cap.release()
+                self.current_video_index += 1  # 移动到下一个视频
+            else:
+                if self.loop:
+                    self.current_video_index = 0
+                else:
+                    self.stop_event.set()
+
+    def update_canvas(self):
+        # 检查是否有新的帧到达
+        try:
+            frame = self.frame_queue.get_nowait()
+            
+            # 获取当前画布的尺寸
+            canvas_width = self.canvas.winfo_width()
+            canvas_height = self.canvas.winfo_height()
+
+            # 将视频帧转换为RGB格式
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # 使用 PIL 将 NumPy 数组转换为图像
+            frame_image = Image.fromarray(frame)
+            
+            # 调整图像大小以适应画布
+            frame_image = frame_image.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+            
+            # 将图像转换为 PhotoImage
+            frame_photo = ImageTk.PhotoImage(image=frame_image)
+            
+            # 在画布上绘制图像
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=frame_photo)
+            self.canvas.image = frame_photo
+            
+        except Empty:
+            # 如果队列空了，就忽略
+            pass
+
+        if self.running:
+            # 每隔一段时间调用自身
+            self.canvas.after(1, self.update_canvas)
+
+    def start(self):
+        super().start()
+        self.update_canvas()
+
+    def stop(self):
+        self.running = False
+        self.stop_event.set()
+        # 清空队列以确保 run 方法可以退出
+        while not self.frame_queue.empty():
+            self.frame_queue.get()
+
 # 使用更加现代的主题
 style = Style(theme='minty')
 
 # 创建主窗口
 root = style.master
 root.title("SD For Live")
-root.geometry('1249x901')  # 设置窗口默认大小
+root.geometry('1820x901')  # 设置窗口默认大小 '1249x901'
+
 
 # 定义左侧面板（文本输入）中间面板（图像显示）右侧面板（图像总览）
-control_panel = ttk.Frame(root, padding="10")
+control_panel = ttk.Frame(root, padding="10", width=401, height=849)
 control_panel.grid(row=0, column=0, sticky="nswe")
-view_panel = ttk.Frame(root, padding="10")
+view_panel = ttk.Frame(root, padding="10", width=532, height=849)
 view_panel.grid(row=0, column=1, sticky="nswe")
-image_history_panel = ttk.Frame(root, padding="10")
+image_history_panel = ttk.Frame(root, padding="10", width=296, height=849)
 image_history_panel.grid(row=0, column=2, sticky="nswe", padx=10)  # 新面板位于第三列
+video_panel = ttk.Frame(root, padding="10", width=532, height=849)
+video_panel.grid(row=0, column=3, sticky="nswe", padx=10)
+
+# 在你的UI布局代码中添加一个Canvas用于显示视频
+video_canvas = Canvas(video_panel, width=532, height=849)
+video_canvas.pack(side='right', fill='both', expand=True)
+
+# 创建并启动视频播放器线程
+video_folder = './videos'  # 替换为你的视频文件路径
+video_player = VideoPlayer(video_folder, video_canvas, loop=True)
 
 # 在其他全局变量定义下面添加进度条和状态标签的声明
 progress_label = ttk.Label(root, text="模型状态：未开始", font=("Helvetica", 10))
 progress_bar = ttk.Progressbar(root, mode='indeterminate')
-
-# 配置列权重，使右侧面板相对更宽
-root.grid_columnconfigure(1, weight=3)
-root.grid_rowconfigure(0, weight=1)
 
 # 选择模型
 ttk.Label(control_panel, text="模型列表", font=("Helvetica", 10)).grid(row=0, column=0, sticky="w", pady=2)
@@ -419,6 +495,14 @@ generate_button.configure(command=generate_image)
 
 # 启动定时更新时间标签的函数
 update_time_labels()
+
+# 在关闭GUI时停止视频播放线程
+def on_closing():
+    video_player.stop()
+    video_player.join()
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 # 运行Tkinter事件循环
 root.mainloop()
